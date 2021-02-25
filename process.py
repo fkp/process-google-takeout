@@ -1,7 +1,7 @@
 import sys, os, argparse, re
 from zipfile import ZipFile
 
-fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*')]
+fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*')]
 
 def DeriveDirectoryName(fileName):
 
