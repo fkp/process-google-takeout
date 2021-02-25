@@ -51,7 +51,7 @@ for zipFile in args.sourceZipFiles:
 						if (os.path.isfile(writeTo)):
 							print ("Skipping " + writeTo + " as file exists...")
 						else:
-							with open(os.path.join(args.destinationDirectory, fileDestination, filename), 'wb') as outFile:
+							with open(writeTo, 'wb') as outFile:
 								outFile.write(zipObj.read(file))
 						
 					else:
