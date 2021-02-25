@@ -40,9 +40,14 @@ for zipFile in args.sourceZipFiles:
 					
 					if fileMatched:
 						sourceDirectory, filename = os.path.split(file)
+						
 						print("File " + file + ", destination location: " + os.path.join(args.destinationDirectory, fileDestination, filename))
 						
-						#zipObj.extract(file, os.path.join(args.destinationDirectory, fileDestination, filename))
+						if (not(os.path.isdir(os.path.join(args.destinationDirectory, fileDestination)))):
+							os.makedirs(os.path.join(args.destinationDirectory, fileDestination))
+						
+						with open(os.path.join(args.destinationDirectory, fileDestination, filename), 'wb') as outFile:
+							outFile.write(zipObj.read(file))
 						
 					else:
 						skippedFilesRegEx +1
