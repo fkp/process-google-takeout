@@ -1,7 +1,7 @@
 import sys, os, argparse, re
 from zipfile import ZipFile
 
-fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*')]
+fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*')]
 
 def DeriveDirectoryName(fileName):
 
@@ -27,42 +27,49 @@ for zipFile in args.sourceZipFiles:
 	skippedFilesRegEx = 0
 	fileExtensions = args.extensions.split(';')
 	
-	if os.path.isfile(zipFile):
-		print ("About to process zip file: " + zipFile)
-		
-		with ZipFile(zipFile,'r') as zipObj:
-			listOfFiles = zipObj.namelist()
+	with open("ignored.log", 'w', buffering=1) as ignoredFiles:
+	
+		if os.path.isfile(zipFile):
+			print ("About to process zip file: " + zipFile)
 			
-			for file in listOfFiles:
-				if any(isinstance(s, str) and file.lower().endswith(s.lower()) for s in fileExtensions):
+			with ZipFile(zipFile,'r') as zipObj:
+				listOfFileInfos = zipObj.infolist()
 				
-					fileMatched, fileDestination = DeriveDirectoryName(file)
+				for file in listOfFileInfos:
+					if any(isinstance(s, str) and file.filename.lower().endswith(s.lower()) for s in fileExtensions):
 					
-					if fileMatched:
-						sourceDirectory, filename = os.path.split(file)
+						fileMatched, fileDestination = DeriveDirectoryName(file.filename)
 						
-						print(os.path.join(args.destinationDirectory, fileDestination, filename))
-						
-						if (not(os.path.isdir(os.path.join(args.destinationDirectory, fileDestination)))):
-							os.makedirs(os.path.join(args.destinationDirectory, fileDestination))
-						
-						writeTo = os.path.join(args.destinationDirectory, fileDestination, filename)
-						
-						if (os.path.isfile(writeTo)):
-							print ("Skipping " + writeTo + " as file exists...")
+						if fileMatched:
+							sourceDirectory, sourcefilename = os.path.split(file.filename)
+							
+							print(os.path.join(args.destinationDirectory, fileDestination, sourcefilename))
+							
+							if (not(os.path.isdir(os.path.join(args.destinationDirectory, fileDestination)))):
+								os.makedirs(os.path.join(args.destinationDirectory, fileDestination))
+							
+							writeTo = os.path.join(args.destinationDirectory, fileDestination, sourcefilename)
+							
+							if (os.path.isfile(writeTo)):
+								if (not(file.file_size == os.path.getsize(writeTo))):
+									raise Exception("File " + file.filename + " already exists but its size is different - looks partially written")
+								else:
+									print ("Skipping " + writeTo + " as file exists...")
+							else:
+								with open(writeTo, 'wb') as outFile:
+									outFile.write(zipObj.read(file))
+							
 						else:
-							with open(writeTo, 'wb') as outFile:
-								outFile.write(zipObj.read(file))
+							ignoredFiles.write("Regex: " + file.filename + "\n")
+							skippedFilesRegEx +1
 						
 					else:
-						skippedFilesRegEx +1
-					
-				else:
-					skippedFilesExtension += 1
+						ignoredFiles.write("Extension: " + file.filename + "\n")
+						skippedFilesExtension += 1
 				
 				
-	else:
-		print ("Can't find zip file: " + zipFile)
+		else:
+			print ("Can't find zip file: " + zipFile)
 		
 	print ("Skipped " + str(skippedFilesExtension) + " files on extension and " + str(skippedFilesRegEx) + " on failed filename parse")
 	
