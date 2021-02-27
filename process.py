@@ -1,7 +1,7 @@
 import sys, os, argparse, re, datetime
 from zipfile import ZipFile
 
-fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*')]
+fileNameMatches = [ re.compile('.*(\d\d\d\d)(\d\d)(\d\d)[_-]\d\d\d\d\d\d.*'), re.compile('.*(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*')]
 
 def DeriveDirectoryName(fileName):
 
@@ -18,12 +18,12 @@ parser = argparse.ArgumentParser(description='A script to extract Google Take ou
 
 parser.add_argument("destinationDirectory", help="The destination directory to output to")
 parser.add_argument("sourceZipFiles", nargs='+', help="The Google Takeout zip files to extract from")
-parser.add_argument("--extensions", default='.jpg;.jpeg;.png;.mp4;.gif', help="The file extension(s) to extract from the zip file - e.g. '.jpg;.jpeg;.png'")
+parser.add_argument("--ignoreExtensions", default='.json;.htm;.html', help="The file extension(s) to ignore from the file, semicolon separated'")
 args = parser.parse_args()
 
 skippedFilesExtension = 0
 skippedFilesRegEx = 0
-fileExtensions = args.extensions.split(';')
+ignoreFileExtensions = args.ignoreExtensions.split(';')
 
 with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".log", 'w', buffering=1) as ignoredFiles:
 
@@ -36,7 +36,11 @@ with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".lo
 				listOfFileInfos = zipObj.infolist()
 				
 				for file in listOfFileInfos:
-					if any(isinstance(s, str) and file.filename.lower().endswith(s.lower()) for s in fileExtensions):
+					if any(isinstance(s, str) and file.filename.lower().endswith(s.lower()) for s in ignoreFileExtensions):
+					
+						skippedFilesExtension += 1
+						
+					else:
 					
 						fileMatched, fileDestination = DeriveDirectoryName(file.filename)
 						
@@ -61,13 +65,8 @@ with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".lo
 							
 						else:
 							ignoredFiles.write("Regex: " + file.filename + "\n")
-							skippedFilesRegEx +1
-						
-					else:
-						ignoredFiles.write("Extension: " + file.filename + "\n")
-						skippedFilesExtension += 1
-				
-				
+							skippedFilesRegEx +=1
+										
 		else:
 			print ("Can't find zip file: " + zipFile)
 		
