@@ -1,4 +1,4 @@
-import sys, os, argparse, re
+import sys, os, argparse, re, datetime
 from zipfile import ZipFile
 
 fileNameMatches = [ re.compile('.*IMG_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*'), re.compile('.*IMG-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID-(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*'), re.compile('.*VID_(\d\d\d\d)(\d\d)(\d\d)_\d\d\d\d\d\d.*')]
@@ -18,16 +18,16 @@ parser = argparse.ArgumentParser(description='A script to extract Google Take ou
 
 parser.add_argument("destinationDirectory", help="The destination directory to output to")
 parser.add_argument("sourceZipFiles", nargs='+', help="The Google Takeout zip files to extract from")
-parser.add_argument("--extensions", default='', help="The file extension(s) to extract from the zip file - e.g. '.jpg;.jpeg;.png'")
+parser.add_argument("--extensions", default='.jpg;.jpeg;.png;.mp4;.gif', help="The file extension(s) to extract from the zip file - e.g. '.jpg;.jpeg;.png'")
 args = parser.parse_args()
 
-for zipFile in args.sourceZipFiles:
+skippedFilesExtension = 0
+skippedFilesRegEx = 0
+fileExtensions = args.extensions.split(';')
 
-	skippedFilesExtension = 0
-	skippedFilesRegEx = 0
-	fileExtensions = args.extensions.split(';')
-	
-	with open("ignored.log", 'w', buffering=1) as ignoredFiles:
+with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".log", 'w', buffering=1) as ignoredFiles:
+
+	for zipFile in args.sourceZipFiles:
 	
 		if os.path.isfile(zipFile):
 			print ("About to process zip file: " + zipFile)
@@ -71,7 +71,6 @@ for zipFile in args.sourceZipFiles:
 		else:
 			print ("Can't find zip file: " + zipFile)
 		
-	print ("Skipped " + str(skippedFilesExtension) + " files on extension and " + str(skippedFilesRegEx) + " on failed filename parse")
-	
-	
+print ("Skipped " + str(skippedFilesExtension) + " files on extension and " + str(skippedFilesRegEx) + " on failed filename parse")
+		
 	
