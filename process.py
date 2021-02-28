@@ -1,13 +1,13 @@
 import sys, os, argparse, re, datetime
 from zipfile import ZipFile
 
-fileNameMatches = [ re.compile('.*(\d\d\d\d)(\d\d)(\d\d)[_-]\d\d\d\d\d\d.*'), re.compile('.*(\d\d\d\d)(\d\d)(\d\d)-WA\d\d\d\d.*')]
+fileNameMatches = [ re.compile('.*(\d\d\d\d)(\d\d)\d\d[_-]\d\d\d\d\d\d.*'), re.compile('.*(\d\d\d\d)(\d\d)\d\d-WA\d\d\d\d.*'), re.compile('.*/Google Photos/(\d\d\d\d)-(\d\d)-\d\d.*')]
 
-def DeriveDirectoryName(fileName):
+def DeriveDirectoryName(file):
 
 	for fileNameMatch in fileNameMatches:
 		
-		matches = fileNameMatch.match(fileName)
+		matches = fileNameMatch.match(file.filename)
 		
 		if matches:
 			return True, f"{matches.group(1)}\{matches.group(1)}-{matches.group(2)}"
@@ -22,6 +22,7 @@ parser.add_argument("--ignoreExtensions", default='.json;.htm;.html', help="The 
 args = parser.parse_args()
 
 skippedFilesExtension = 0
+skippedFilesNotGooglePhotos = 0
 skippedFilesRegEx = 0
 ignoreFileExtensions = args.ignoreExtensions.split(';')
 
@@ -36,13 +37,12 @@ with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".lo
 				listOfFileInfos = zipObj.infolist()
 				
 				for file in listOfFileInfos:
-					if any(isinstance(s, str) and file.filename.lower().endswith(s.lower()) for s in ignoreFileExtensions):
-					
+					if not(file.filename.startswith("Takeout/Google Photos/")):
+						skippedFilesNotGooglePhotos += 1
+					elif any(isinstance(s, str) and file.filename.lower().endswith(s.lower()) for s in ignoreFileExtensions):
 						skippedFilesExtension += 1
-						
 					else:
-					
-						fileMatched, fileDestination = DeriveDirectoryName(file.filename)
+						fileMatched, fileDestination = DeriveDirectoryName(file)
 						
 						if fileMatched:
 							sourceDirectory, sourcefilename = os.path.split(file.filename)
@@ -56,20 +56,17 @@ with open("ignored" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".lo
 							
 							if (os.path.isfile(writeTo)):
 								if (not(file.file_size == os.path.getsize(writeTo))):
-									raise Exception("File " + file.filename + " already exists but its size is different - looks partially written")
-								else:
-									print ("Skipping " + writeTo + " as file exists...")
+									ignoredFiles.write("File " + writeTo + " already exists but its size is different - looks partially written (" + str(file.file_size) + " in zip, " + str(os.path.getsize(writeTo)) + " on disk)\n")
+								
+								print ("Skipping " + writeTo + " as file exists...")
 							else:
 								with open(writeTo, 'wb') as outFile:
-									outFile.write(zipObj.read(file))
-							
+									outFile.write(zipObj.read(file))	
 						else:
-							ignoredFiles.write("Regex: " + file.filename + "\n")
+							ignoredFiles.write("Can't get year / month from filename: " + file.filename + "\n")
 							skippedFilesRegEx +=1
 										
 		else:
 			print ("Can't find zip file: " + zipFile)
 		
-print ("Skipped " + str(skippedFilesExtension) + " files on extension and " + str(skippedFilesRegEx) + " on failed filename parse")
-		
-	
+print ("Skipped " + str(skippedFilesExtension) + " files on extension, " + str(skippedFilesRegEx) + " on filename parse and " + str(skippedFilesNotGooglePhotos) + " not in Google photos")
