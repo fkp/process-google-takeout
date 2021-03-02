@@ -10,7 +10,7 @@ def DeriveDirectoryName(file):
 		matches = fileNameMatch.match(file.filename)
 		
 		if matches:
-			return True, f"{matches.group(1)}\{matches.group(1)}-{matches.group(2)}"
+			return True, f"{matches.group(1)}\{matches.group(1)}_{matches.group(2)}"
 	
 	return False,''
 
