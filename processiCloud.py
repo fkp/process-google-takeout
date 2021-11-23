@@ -51,12 +51,12 @@ with open("ignorediCloud" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") 
 						if (not(os.path.getsize(targetFile) == os.path.getsize(fullFile))):
 							ignoredFiles.write("File " + targetFile + " already exists but its size is different - looks partially written (" + str(os.path.getsize(targetFile)) + " in destination, extracted as " + str(os.path.getsize(fullFile)) + " on disk)\n")
 							
-						print ("Skipping " + targetFile + " as file exists...")
+						print ("Skipping " + targetFile + " as file exists and deleting from temp folder...")
+						os.remove(fullFile)
 					else:
-						print ("Moving " + fullFile + " to " + targetFile)
 						shutil.move(fullFile, targetFile)
 				else:
-					print ("No tag " + exifParameter)
+					ignoredFiles.write("No tag " + exifParameter + " on " + fullFile + "\n")
 		else:
 			print ("Can't find zip file: " + zipFile)
 		
