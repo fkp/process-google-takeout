@@ -1,6 +1,7 @@
 import sys, os, argparse, re, datetime
 from zipfile import ZipFile
 import exifread
+import shutil
 
 parser = argparse.ArgumentParser(description='A script to extract iCloud information')
 
@@ -26,36 +27,36 @@ with open("ignorediCloud" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") 
 			os.makedirs(tempextract)
 			
 			with ZipFile(zipFile,'r') as zipObj:
-			
 				zipObj.extractall(tempextract)
 				
-				extractedDirectory = os.path.join(tempextract,"iCloud Photos")
-				
-				for file in os.listdir(extractedDirectory):
-				
-					# Get the exif data
-					fullFile = os.path.join(extractedDirectory,file)
-					exifdata = open(fullFile, 'rb')
+			extractedDirectory = os.path.join(tempextract,"iCloud Photos")
+			
+			for file in os.listdir(extractedDirectory):
+			
+				# Get the exif data
+				fullFile = os.path.join(extractedDirectory,file)
+				with open(fullFile, 'rb') as exifdata:
 					tags = exifread.process_file(exifdata)
 
-					if exifParameter in tags.keys():
-			
-						targetDirectory = os.path.join(args.destinationDirectory,f"{tags[exifParameter].printable[0:4]}\{tags[exifParameter].printable[0:4]}_{tags[exifParameter].printable[5:7]}")
+				if exifParameter in tags.keys():
+		
+					targetDirectory = os.path.join(args.destinationDirectory,f"{tags[exifParameter].printable[0:4]}\{tags[exifParameter].printable[0:4]}_{tags[exifParameter].printable[5:7]}")
+					
+					if (not(os.path.isdir(targetDirectory))):
+						os.makedirs(targetDirectory)
 						
-						if (not(os.path.isdir(targetDirectory))):
-							os.makedirs(targetDirectory)
+					targetFile = os.path.join(targetDirectory, file)
+					
+					if (os.path.isfile(targetFile)):
+						if (not(os.path.getsize(targetFile) == os.path.getsize(fullFile))):
+							ignoredFiles.write("File " + targetFile + " already exists but its size is different - looks partially written (" + str(os.path.getsize(targetFile)) + " in destination, extracted as " + str(os.path.getsize(fullFile)) + " on disk)\n")
 							
-						targetFile = os.path.join(targetDirectory, file)
-						
-						if (os.path.isfile(targetFile)):
-							if (not(os.path.getsize(targetFile) == os.path.getsize(fullFile))):
-								ignoredFiles.write("File " + targetFile + " already exists but its size is different - looks partially written (" + str(os.path.getsize(targetFile)) + " in destination, extracted as " + str(os.path.getsize(fullFile)) + " on disk)\n")
-								
-							print ("Skipping " + targetFile + " as file exists...")
-						else:
-							print ("I WILL MOVE " + fullFile + " TO " + targetFile)
+						print ("Skipping " + targetFile + " as file exists...")
 					else:
-						print ("No tag " + exifParameter)
+						print ("Moving " + fullFile + " to " + targetFile)
+						shutil.move(fullFile, targetFile)
+				else:
+					print ("No tag " + exifParameter)
 		else:
 			print ("Can't find zip file: " + zipFile)
 		
